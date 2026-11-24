@@ -21,7 +21,6 @@ Example: "The monthly rent is ₹18,000 [2], due by the 5th of each month [2]."
 Be concise and specific: quote amounts, dates and conditions exactly.
 If the passages do not contain the answer, say you couldn't find it in the documents.`;
 
-/* ------------------------------------------------------------------ setup */
 async function init() {
   try { performance.setResourceTimingBufferSize(2000); } catch { /* ignore */ }
   startMonitor(renderPrivacy);
@@ -102,7 +101,6 @@ function bindEvents() {
   };
 }
 
-/* ------------------------------------------------------------------ model */
 async function updateCacheHint() {
   if (!state.gpu) return;
   const cached = await isCached($('modelSelect').value);
@@ -137,7 +135,6 @@ async function onLoadModel() {
   }
 }
 
-/* ------------------------------------------------------------------ documents */
 async function addFiles(files) {
   for (const file of files) {
     try {
@@ -208,7 +205,6 @@ function renderDocs() {
   $('input').placeholder = state.docs.length ? 'Ask about your documents…' : 'Add a document first, or try the sample…';
 }
 
-/* ------------------------------------------------------------------ chat */
 async function ask(question) {
   if (state.busy) return;
   $('welcome')?.remove();
@@ -272,10 +268,6 @@ async function ask(question) {
   }
 }
 
-/**
- * Small models often skip citation markers. This links each sentence to the passage
- * that shares the most words with it (only when the match is strong).
- */
 function addCitations(text, hits) {
   const words = (s) => new Set(s.toLowerCase().match(/[a-z0-9₹,]+/g)?.filter((w) => w.length > 3) ?? []);
   const passages = hits.map((h) => words(h.chunk.text));
@@ -353,7 +345,6 @@ function scrollDown() {
   m.scrollTop = m.scrollHeight;
 }
 
-/* ------------------------------------------------------------------ small helpers */
 function setChip(id, text, cls) {
   const chip = $(id);
   chip.hidden = false;
@@ -378,7 +369,6 @@ function escapeHtml(s) {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-/** Minimal markdown: paragraphs, bullet/numbered lists, bold, inline code and [n] citations. */
 function renderMarkdown(md, maxCite) {
   const inline = (s) => escapeHtml(s)
     .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')

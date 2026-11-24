@@ -39,7 +39,6 @@ export function startMonitor(callback) {
   } catch { /* older browsers */ }
 }
 
-/** Marks the start of answering a question; call the returned function when done. */
 export function beginChat() {
   const win = [performance.now(), null];
   chatWindows.push(win);

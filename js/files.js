@@ -17,7 +17,6 @@ function loadPdfJs() {
   return pdfjsPromise;
 }
 
-/** Returns [{ page, text }] for a file. Text files are a single "page". */
 export async function readFile(file) {
   const name = file.name.toLowerCase();
   if (name.endsWith('.pdf')) {
@@ -45,7 +44,6 @@ function clean(text) {
   return text.replace(/\r/g, '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-/** Splits pages into overlapping chunks, keeping paragraph boundaries where possible. */
 export function chunkPages(pages, docName) {
   const chunks = [];
   for (const { page, text } of pages) {

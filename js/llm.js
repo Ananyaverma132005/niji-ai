@@ -13,7 +13,6 @@ let engine = null;
 let loadedModel = null;
 let supportsF16 = true;
 
-/** Checks for WebGPU. Returns { ok, reason }. */
 export async function checkWebGPU() {
   if (!('gpu' in navigator)) return { ok: false, reason: 'This browser does not support WebGPU.' };
   try {
@@ -31,7 +30,6 @@ async function lib() {
   return webllm;
 }
 
-/** GPUs without 16-bit float support need the q4f32 build of the same model. */
 async function resolveModelId(id) {
   if (supportsF16) return id;
   const { prebuiltAppConfig } = await lib();
@@ -91,7 +89,6 @@ export function isReady() {
   return engine !== null;
 }
 
-/** Streams a reply. onToken(textSoFar) is called as tokens arrive. Returns { text, stats }. */
 export async function generate(messages, onToken) {
   if (!engine) throw new Error('Model not loaded');
   const stream = await engine.chat.completions.create({

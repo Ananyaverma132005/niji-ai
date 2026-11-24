@@ -15,7 +15,6 @@ function getExtractor() {
   return extractorPromise;
 }
 
-/** Embeds a list of texts; returns arrays of 384 numbers (already normalised). */
 export async function embed(texts, onProgress) {
   const extractor = await getExtractor();
   const vectors = [];
@@ -39,10 +38,6 @@ function keywords(text) {
   return new Set(text.toLowerCase().match(/[a-z0-9]+/g)?.filter((w) => w.length > 2 && !STOP.has(w)) ?? []);
 }
 
-/**
- * Hybrid search: cosine similarity of embeddings plus a small keyword-overlap boost,
- * which helps with exact terms like amounts, dates and clause names.
- */
 export async function search(query, chunks, k = 4) {
   if (!chunks.length) return [];
   const [q] = await embed([query]);
