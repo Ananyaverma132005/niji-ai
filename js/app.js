@@ -150,8 +150,13 @@ async function addFiles(files) {
 
 async function addSample() {
   if (state.docs.some((d) => d.name === 'sample-rental-agreement.md')) return;
-  const text = await (await fetch('samples/sample-rental-agreement.md')).text();
-  await indexDocument('sample-rental-agreement.md', [{ page: null, text }]);
+  try {
+    const text = await (await fetch('samples/sample-rental-agreement.md')).text();
+    await indexDocument('sample-rental-agreement.md', [{ page: null, text }]);
+  } catch (e) {
+    console.error(e);
+    showIndexProgress(0, `Couldn't add the sample: ${e.message}`);
+  }
 }
 
 async function indexDocument(name, pages) {

@@ -1,14 +1,16 @@
 // On-device embeddings and semantic search (transformers.js, all-MiniLM-L6-v2).
 
-const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1/dist/transformers.web.min.js';
+// jsDelivr's +esm build rewrites the library's own imports (onnxruntime-web) so it loads without a bundler.
+const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.1/+esm';
 const EMBEDDING_MODEL = 'Xenova/all-MiniLM-L6-v2';
 
 let extractorPromise = null;
 
 function getExtractor() {
   if (!extractorPromise) {
-    extractorPromise = import(TRANSFORMERS_URL).then(({ pipeline }) =>
-      pipeline('feature-extraction', EMBEDDING_MODEL, { dtype: 'q8' }));
+    extractorPromise = import(TRANSFORMERS_URL)
+      .then(({ pipeline }) => pipeline('feature-extraction', EMBEDDING_MODEL, { dtype: 'q8' }))
+      .catch((e) => { extractorPromise = null; throw e; });
   }
   return extractorPromise;
 }
