@@ -32,5 +32,8 @@ jobs:
         with:
           path: _site
 
+      # Give the uploaded artifact a moment to become visible to the deploy step.
+      - run: sleep 15
+
       - id: deployment
         uses: actions/deploy-pages@v4
