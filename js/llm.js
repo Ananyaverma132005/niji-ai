@@ -49,13 +49,40 @@ export async function isCached(id) {
 }
 
 export async function loadModel(id, onProgress) {
-  const { CreateMLCEngine } = await lib();
+  const { CreateMLCEngine, deleteModelAllInfoInCache } = await lib();
   const modelId = await resolveModelId(id);
   if (engine && loadedModel === modelId) return modelId;
-  if (engine) await engine.unload();
-  engine = await CreateMLCEngine(modelId, {
-    initProgressCallback: (r) => onProgress?.(r.progress ?? 0, r.text ?? ''),
-  });
+  if (engine) { await engine.unload(); engine = null; }
+
+  // Ask the browser not to clear the model files when storage gets tight.
+  try { await navigator.storage?.persist?.(); } catch { /* optional */ }
+
+  // Keep only one model on disk: remove the files of the other models.
+  for (const m of MODELS) {
+    for (const other of [m.id, m.id.replace('q4f16_1', 'q4f32_1')]) {
+      if (other === modelId) continue;
+      try { await deleteModelAllInfoInCache(other); } catch { /* not cached */ }
+    }
+  }
+
+  const options = { initProgressCallback: (r) => onProgress?.(r.progress ?? 0, r.text ?? '') };
+  try {
+    engine = await CreateMLCEngine(modelId, options);
+  } catch (e) {
+    if (!/cache|quota|storage/i.test(String(e?.message))) throw e;
+    // A partial or evicted download can break the cache: clear it and try once more.
+    onProgress?.(0, 'Storage problem, clearing the partial download and retrying…');
+    try { await deleteModelAllInfoInCache(modelId); } catch { /* ignore */ }
+    try {
+      engine = await CreateMLCEngine(modelId, options);
+    } catch (e2) {
+      if (/cache|quota|storage/i.test(String(e2?.message))) {
+        throw new Error('your browser doesn\'t have enough free storage for this model. ' +
+          'Try a smaller model, free up disk space, or use a normal (not private) window.');
+      }
+      throw e2;
+    }
+  }
   loadedModel = modelId;
   return modelId;
 }
