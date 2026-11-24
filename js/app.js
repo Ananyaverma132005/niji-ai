@@ -46,6 +46,9 @@ async function init() {
   state.docs = await store.loadDocs();
   renderDocs();
 
+  // Load the search model now, so asking a question never needs the network.
+  embed(['warm up']).catch((e) => console.warn('Search model not loaded yet:', e));
+
   const gpu = await checkWebGPU();
   state.gpu = gpu.ok;
   if (gpu.ok) {
@@ -244,7 +247,8 @@ async function ask(question) {
       bubble.innerHTML = renderMarkdown(soFar, hits.length) + '<span class="cursor"></span>';
       scrollDown();
     });
-    bubble.innerHTML = renderMarkdown(text || '(no answer)', hits.length);
+    const answer = /\[\d+\]/.test(text) ? text : addCitations(text, hits);
+    bubble.innerHTML = renderMarkdown(answer || '(no answer)', hits.length);
     bubble.appendChild(renderSources(hits, false));
     const seconds = ((performance.now() - started) / 1000).toFixed(1);
     const speed = stats.match(/decod\w*:\s*([\d.]+)/i);
@@ -266,6 +270,31 @@ async function ask(question) {
     setBusy(false);
     scrollDown();
   }
+}
+
+/**
+ * Small models often skip citation markers. This links each sentence to the passage
+ * that shares the most words with it (only when the match is strong).
+ */
+function addCitations(text, hits) {
+  const words = (s) => new Set(s.toLowerCase().match(/[a-z0-9₹,]+/g)?.filter((w) => w.length > 3) ?? []);
+  const passages = hits.map((h) => words(h.chunk.text));
+  return text.replace(/[^.!?\n]+[.!?]?/g, (sentence) => {
+    const sw = words(sentence);
+    if (sw.size < 3) return sentence;
+    let best = -1, bestScore = 0;
+    passages.forEach((pw, i) => {
+      let overlap = 0;
+      sw.forEach((w) => { if (pw.has(w)) overlap++; });
+      const score = overlap / sw.size;
+      if (score > bestScore) { bestScore = score; best = i; }
+    });
+    if (best < 0 || bestScore < 0.5) return sentence;
+    const trimmed = sentence.replace(/\s+$/, '');
+    const end = trimmed.match(/[.!?]$/) ? trimmed.slice(-1) : '';
+    const body = end ? trimmed.slice(0, -1) : trimmed;
+    return `${body} [${best + 1}]${end}${sentence.slice(trimmed.length)}`;
+  });
 }
 
 function label(chunk) {
