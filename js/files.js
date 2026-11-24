@@ -53,7 +53,9 @@ export function chunkPages(pages, docName) {
     let current = '';
     const flush = () => {
       if (current.trim().length > 40) chunks.push({ doc: docName, page, text: current.trim() });
-      current = current.slice(-CHUNK_OVERLAP);
+      // Carry some overlap into the next chunk, starting at a word boundary.
+      const tail = current.slice(-CHUNK_OVERLAP);
+      current = tail.slice(tail.search(/\s/) + 1);
     };
     for (const para of paragraphs) {
       if (para.length > CHUNK_SIZE) {

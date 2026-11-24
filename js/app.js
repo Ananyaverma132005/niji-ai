@@ -16,7 +16,9 @@ const SUGGESTIONS = [
 
 const SYSTEM_PROMPT = `You are Niji, a private assistant that runs entirely on the user's device.
 Answer the question using only the numbered context passages from the user's documents.
-Cite the passages you use like [1] or [2]. Be concise and specific: quote amounts, dates and conditions exactly.
+After each fact, add the number of the passage it came from in square brackets.
+Example: "The monthly rent is ₹18,000 [2], due by the 5th of each month [2]."
+Be concise and specific: quote amounts, dates and conditions exactly.
 If the passages do not contain the answer, say you couldn't find it in the documents.`;
 
 /* ------------------------------------------------------------------ setup */
@@ -245,12 +247,13 @@ async function ask(question) {
     bubble.innerHTML = renderMarkdown(text || '(no answer)', hits.length);
     bubble.appendChild(renderSources(hits, false));
     const seconds = ((performance.now() - started) / 1000).toFixed(1);
+    const speed = stats.match(/decod\w*:\s*([\d.]+)/i);
+    const tps = speed ? Math.round(+speed[1]) : null;
     const meta = document.createElement('div');
     meta.className = 'meta-line';
-    meta.textContent = `Answered on your device in ${seconds}s${stats ? ` · ${stats}` : ''}`;
+    meta.textContent = `Answered on your device in ${seconds}s${tps ? ` · ${tps} tokens/s` : ''} · 0 bytes sent`;
     bubble.appendChild(meta);
-    const speed = stats.match(/decode:\s*([\d.]+)\s*tok\/s/);
-    if (speed) setChip('speedChip', `⚡ ${Math.round(+speed[1])} tokens/s`, 'ok');
+    if (tps) setChip('speedChip', `⚡ ${tps} tokens/s on your GPU`, 'ok');
     wireCitations(bubble);
 
     state.history.push({ role: 'user', content: question }, { role: 'assistant', content: text });
